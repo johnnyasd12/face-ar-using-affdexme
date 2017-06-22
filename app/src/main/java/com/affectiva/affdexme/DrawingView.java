@@ -474,7 +474,50 @@ public class DrawingView extends SurfaceView implements SurfaceHolder.Callback {
             //Default to an 'inverted' box, where the absolute max and min values of the surface view are inside-out
             Rect boundingRect = new Rect(config.surfaceViewWidth, config.surfaceViewHeight, 0, 0);
 
-            int pointId = 0;
+            if(true){ // 貼圖
+                PointF [] facePoints = face.getFacePoints();
+                int drawX,drawY;
+                int faceWidth = (int)(facePoints[10].x - facePoints[5].x); // 左眉外側 - 右眉外側
+                int faceHeight = (int)(facePoints[2].y - facePoints[11].y)*3/2; // (下巴 - 鼻根) *3/2
+
+                PointF pointNoseRoot = facePoints[11];// 耳朵位置參考 鼻根
+                int rootX = (int)pointNoseRoot.x;
+                int rootY = (int)pointNoseRoot.y;
+                int earWidth = faceWidth*6/5;
+                int earHeight = faceHeight;
+                drawX = rootX + earWidth/2;
+                drawY = rootY - earHeight*4/3;
+                if(mirrorPoints){drawX = config.imageWidth - drawX;}
+                drawX *= config.screenToImageRatio;
+                drawY *= config.screenToImageRatio;
+                Log.d("Draw/rootX",rootX+"");
+                Log.d("Draw/rootY",rootY+"");
+                Log.d("Draw/faceWidth",faceWidth+"");
+                Log.d("Draw/faceHeight",faceHeight+"");
+                earWidth *= config.screenToImageRatio;
+                earHeight *= config.screenToImageRatio;
+                Bitmap earBitmap = BitmapFactory.decodeResource(DrawingView.this.getResources(),R.drawable.rbear);
+                Bitmap earBitmap2 = Bitmap.createScaledBitmap(earBitmap, earWidth, earHeight, false);
+                c.drawBitmap(earBitmap2, drawX, drawY, trackingPointsPaint);// 放在額頭 並置中
+                // 12:nose tip 鼻尖, 14: nose bottom boundary 鼻底
+                PointF pointNoseTip = facePoints[12];
+                int tipX = (int)pointNoseTip.x;
+                int tipY = (int)pointNoseTip.y;
+                int noseWidth = faceWidth;
+                int noseHeight = faceHeight/2;
+                drawX = tipX + noseWidth/2 ;
+//                drawY = tipY - noseHeight/2;
+                drawY = (int)(face.getFacePoints()[12].y+face.getFacePoints()[14].y)/2 - noseHeight/2; // 鼻尖和鼻底之間
+                if(mirrorPoints){drawX = config.imageWidth - drawX;}
+                drawX *= config.screenToImageRatio;
+                drawY *= config.screenToImageRatio;
+                noseWidth *= config.screenToImageRatio;
+                noseHeight *= config.screenToImageRatio;
+                Bitmap noseBitmap = BitmapFactory.decodeResource(DrawingView.this.getResources(),R.drawable.rbnose);
+                Bitmap noseBitmap2 = Bitmap.createScaledBitmap(noseBitmap, noseWidth, noseHeight, false);
+                c.drawBitmap(noseBitmap2, drawX, drawY, trackingPointsPaint);// 放在鼻頭 並置中
+
+            }
             for (PointF point : face.getFacePoints()) {
                 //transform from the camera coordinates to our screen coordinates
                 //The camera preview is displayed as a mirror, so X pts have to be mirrored back.
@@ -494,31 +537,7 @@ public class DrawingView extends SurfaceView implements SurfaceHolder.Callback {
                 //Draw facial tracking dots.
                 if (config.isDrawPointsEnabled) {
                     c.drawCircle(x, y, config.drawThickness, trackingPointsPaint);
-
-                    int drawX,drawY;
-                    int pointX = (int)x, pointY = (int)y;
-                    int faceWidth = config.surfaceViewWidth;
-                    int faceHeight = config.surfaceViewHeight;
-                    if(pointId==11){ // (耳朵位置參考) 11: nose root 鼻根
-                        int earWidth = faceWidth;
-                        int earHeight = faceHeight;
-                        drawX = pointX - earWidth/2;
-                        drawY = pointY - earHeight*2;
-                        Bitmap earBitmap = BitmapFactory.decodeResource(DrawingView.this.getResources(),R.drawable.rbear);
-                        Bitmap earBitmap2 = Bitmap.createScaledBitmap(earBitmap, earWidth, earHeight, false);
-                        c.drawBitmap(earBitmap2, drawX, drawY, trackingPointsPaint);// 放在額頭 並置中
-                    }else if(pointId == 12){// 12:nose tip 鼻尖, 14: nose bottom boundary 鼻底
-                        int noseWidth = faceWidth;
-                        int noseHeight = faceHeight*2/3;
-                        drawX = pointX - noseWidth/2 ;
-                        drawY = pointY - noseHeight/2;
-                        //drawY = (int)(face.getFacePoints()[12].y+face.getFacePoints()[14].y)/2 - noseHeight/2; // 鼻尖和鼻底之間
-                        Bitmap noseBitmap = BitmapFactory.decodeResource(DrawingView.this.getResources(),R.drawable.rbnose);
-                        Bitmap noseBitmap2 = Bitmap.createScaledBitmap(noseBitmap, noseWidth, noseHeight, false);
-                        c.drawBitmap(noseBitmap2, drawX, drawY, trackingPointsPaint);// 放在鼻頭 並置中
-                    }
                 }
-                pointId++;
             }
 
             //Draw the bounding box.
@@ -768,10 +787,10 @@ public class DrawingView extends SurfaceView implements SurfaceHolder.Callback {
         private int surfaceViewHeight = 0;
         private float screenToImageRatio = 0;
         private int drawThickness = 0;
-        private boolean isDrawPointsEnabled = true; //by default, have the drawing thread draw tracking dots
+        private boolean isDrawPointsEnabled = false; //by default, have the drawing thread draw tracking dots 預設為true
         private boolean isDimensionsNeeded = true;
-        private boolean isDrawAppearanceMarkersEnabled = true; //by default, draw the appearance markers
-        private boolean isDrawEmojiMarkersEnabled = true; //by default, draw the dominant emoji markers
+        private boolean isDrawAppearanceMarkersEnabled = true; //by default, draw the appearance markers 畫臉 預設為true
+        private boolean isDrawEmojiMarkersEnabled = false; //by default, draw the dominant emoji markers 預設為true
 
         private Paint dominantEmotionLabelPaint;
         private Paint dominantEmotionMetricBarPaint;
