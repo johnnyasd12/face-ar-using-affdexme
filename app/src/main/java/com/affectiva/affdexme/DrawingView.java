@@ -499,11 +499,11 @@ public class DrawingView extends SurfaceView implements SurfaceHolder.Callback {
                     int pointX = (int)x, pointY = (int)y;
                     int faceWidth = config.surfaceViewWidth;
                     int faceHeight = config.surfaceViewHeight;
-                    if(pointId==11){ // nose root 鼻根(耳朵位置參考)
+                    if(pointId==11){ // (耳朵位置參考) 11: nose root 鼻根
                         int earWidth = faceWidth;
                         int earHeight = faceHeight;
                         drawX = pointX - earWidth/2;
-                        drawY = pointY - earHeight*4/3;
+                        drawY = pointY - earHeight*2;
                         Bitmap earBitmap = BitmapFactory.decodeResource(DrawingView.this.getResources(),R.drawable.rbear);
                         Bitmap earBitmap2 = Bitmap.createScaledBitmap(earBitmap, earWidth, earHeight, false);
                         c.drawBitmap(earBitmap2, drawX, drawY, trackingPointsPaint);// 放在額頭 並置中
