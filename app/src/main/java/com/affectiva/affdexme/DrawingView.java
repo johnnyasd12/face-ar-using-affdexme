@@ -36,6 +36,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import static java.lang.Math.sqrt;
+
 /**
  * This class contains a SurfaceView and its own thread that draws to it.
  * It is used to display the facial tracking dots over a user's face.
@@ -468,7 +470,17 @@ public class DrawingView extends SurfaceView implements SurfaceHolder.Callback {
                 }
             }
         }
-
+//        private void drawRotateBitmap(Canvas canvas, Paint paint, Bitmap bitmap,
+//                                      float rotation, float posX, float posY) {// 旋轉bitmap本身
+//            //if(mirrorPoints){posX=config.imageWidth-posX;}
+//            Matrix matrix = new Matrix();
+//            int offsetX = bitmap.getWidth() / 2;
+//            int offsetY = bitmap.getHeight() / 2;
+//            matrix.postTranslate(-offsetX, -offsetY);
+//            matrix.postRotate(rotation);
+//            matrix.postTranslate(posX + offsetX, posY + offsetY);
+//            canvas.drawBitmap(bitmap, matrix, paint);
+//        }
         private void drawFaceAttributes(Canvas c, Face face, boolean mirrorPoints, boolean isMultiFaceMode) {
             //Coordinates around which to draw bounding box.
             //Default to an 'inverted' box, where the absolute max and min values of the surface view are inside-out
@@ -476,7 +488,7 @@ public class DrawingView extends SurfaceView implements SurfaceHolder.Callback {
 
             if(true){ // 貼圖
                 PointF [] facePoints = face.getFacePoints();
-                int drawX,drawY;
+                int drawEarX,drawEarY,drawNoseX,drawNoseY;
                 int faceWidth = (int)(facePoints[10].x - facePoints[5].x); // 左眉外側 - 右眉外側
                 int faceHeight = (int)(facePoints[2].y - facePoints[11].y)*3/2; // (下巴 - 鼻根) *3/2
 
@@ -485,11 +497,11 @@ public class DrawingView extends SurfaceView implements SurfaceHolder.Callback {
                 int rootY = (int)pointNoseRoot.y;
                 int earWidth = faceWidth*6/5;
                 int earHeight = faceHeight;
-                drawX = rootX + earWidth/2;
-                drawY = rootY - earHeight*4/3;
-                if(mirrorPoints){drawX = config.imageWidth - drawX;}
-                drawX *= config.screenToImageRatio;
-                drawY *= config.screenToImageRatio;
+                drawEarX = rootX + earWidth/2;
+                drawEarY = rootY - earHeight*4/3;
+                if(mirrorPoints){drawEarX = config.imageWidth - drawEarX;}
+                drawEarX *= config.screenToImageRatio;
+                drawEarY *= config.screenToImageRatio;
                 Log.d("Draw/rootX",rootX+"");
                 Log.d("Draw/rootY",rootY+"");
                 Log.d("Draw/faceWidth",faceWidth+"");
@@ -498,24 +510,47 @@ public class DrawingView extends SurfaceView implements SurfaceHolder.Callback {
                 earHeight *= config.screenToImageRatio;
                 Bitmap earBitmap = BitmapFactory.decodeResource(DrawingView.this.getResources(),R.drawable.rbear);
                 Bitmap earBitmap2 = Bitmap.createScaledBitmap(earBitmap, earWidth, earHeight, false);
-                c.drawBitmap(earBitmap2, drawX, drawY, trackingPointsPaint);// 放在額頭 並置中
                 // 12:nose tip 鼻尖, 14: nose bottom boundary 鼻底
                 PointF pointNoseTip = facePoints[12];
                 int tipX = (int)pointNoseTip.x;
                 int tipY = (int)pointNoseTip.y;
                 int noseWidth = faceWidth;
                 int noseHeight = faceHeight/2;
-                drawX = tipX + noseWidth/2 ;
-//                drawY = tipY - noseHeight/2;
-                drawY = (int)(face.getFacePoints()[12].y+face.getFacePoints()[14].y)/2 - noseHeight/2; // 鼻尖和鼻底之間
-                if(mirrorPoints){drawX = config.imageWidth - drawX;}
-                drawX *= config.screenToImageRatio;
-                drawY *= config.screenToImageRatio;
+                drawNoseX = tipX + noseWidth/2 ;
+                //drawNoseY = tipY - noseHeight/2;
+                drawNoseY = (int)(face.getFacePoints()[12].y+face.getFacePoints()[14].y)/2 - noseHeight/2; // 鼻尖和鼻底之間
+                if(mirrorPoints){drawNoseX = config.imageWidth - drawNoseX;}
+                drawNoseX *= config.screenToImageRatio;
+                drawNoseY *= config.screenToImageRatio;
                 noseWidth *= config.screenToImageRatio;
                 noseHeight *= config.screenToImageRatio;
                 Bitmap noseBitmap = BitmapFactory.decodeResource(DrawingView.this.getResources(),R.drawable.rbnose);
                 Bitmap noseBitmap2 = Bitmap.createScaledBitmap(noseBitmap, noseWidth, noseHeight, false);
-                c.drawBitmap(noseBitmap2, drawX, drawY, trackingPointsPaint);// 放在鼻頭 並置中
+                //image(鏡像) x向左遞增, y向下遞增, 原點在右上
+                // 計算傾斜角度
+                float chinX = facePoints[2].x;
+                float chinY = facePoints[2].y;
+                float noseX = facePoints[14].x; // 鼻子底部
+                float noseY = facePoints[14].y;
+                if(mirrorPoints){
+                    chinX = config.imageWidth-chinX;
+                    noseX = config.imageWidth-noseX;
+                }
+                chinX*=config.screenToImageRatio;
+                chinY*=config.screenToImageRatio;
+                noseX*=config.screenToImageRatio;
+                noseY*=config.screenToImageRatio;
+                float lenChinToNose = (float)sqrt((chinX-noseX)*(chinX-noseX)+(chinY-noseY)*(chinY-noseY)); // 下巴和鼻子的距離
+                float sinAngle = (noseX-chinX)/lenChinToNose; // 大概是這樣算吧
+                Log.d("Draw/chinX-drawNoseX",(chinX-noseX)+"");
+                Log.d("Draw/x_chin",chinX+"");
+                Log.d("Draw/x_nose",noseX+"");
+                Log.d("Draw/sin",sinAngle+"");
+                float angle = (float)Math.toDegrees(Math.asin(sinAngle)); Log.d("Draw/angle",angle+"");
+                c.rotate(angle,noseX,noseY);
+                c.drawBitmap(earBitmap2, drawEarX, drawEarY, trackingPointsPaint);// 耳朵放在額頭 並置中
+                c.drawBitmap(noseBitmap2, drawNoseX, drawNoseY, trackingPointsPaint);// 鼻子放在鼻頭 並置中
+                //drawRotateBitmap(c,trackingPointsPaint,earBitmap2,angle,drawEarX,drawEarY);
 
             }
             for (PointF point : face.getFacePoints()) {
@@ -790,7 +825,7 @@ public class DrawingView extends SurfaceView implements SurfaceHolder.Callback {
         private boolean isDrawPointsEnabled = false; //by default, have the drawing thread draw tracking dots 預設為true
         private boolean isDimensionsNeeded = true;
         private boolean isDrawAppearanceMarkersEnabled = true; //by default, draw the appearance markers 畫臉 預設為true
-        private boolean isDrawEmojiMarkersEnabled = false; //by default, draw the dominant emoji markers 預設為true
+        private boolean isDrawEmojiMarkersEnabled = false; //by default, draw the dominant emoji markers 畫表情 預設為true
 
         private Paint dominantEmotionLabelPaint;
         private Paint dominantEmotionMetricBarPaint;
