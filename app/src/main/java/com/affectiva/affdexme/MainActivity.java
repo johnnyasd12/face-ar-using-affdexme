@@ -519,7 +519,7 @@ public class MainActivity extends AppCompatActivity
 
         if (sharedPreferences.getBoolean("emoji", drawingView.getDrawEmojiMarkersEnabled())) {
             detector.setDetectAllEmojis(true);
-            setShowEmoji(true);
+            setShowEmoji(true); // 預設為true
         } else {
             detector.setDetectAllEmojis(false);
             setShowEmoji(false);

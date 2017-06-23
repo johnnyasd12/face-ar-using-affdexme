@@ -11,6 +11,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.graphics.PointF;
@@ -470,17 +471,26 @@ public class DrawingView extends SurfaceView implements SurfaceHolder.Callback {
                 }
             }
         }
-//        private void drawRotateBitmap(Canvas canvas, Paint paint, Bitmap bitmap,
-//                                      float rotation, float posX, float posY) {// 旋轉bitmap本身
-//            //if(mirrorPoints){posX=config.imageWidth-posX;}
-//            Matrix matrix = new Matrix();
-//            int offsetX = bitmap.getWidth() / 2;
-//            int offsetY = bitmap.getHeight() / 2;
-//            matrix.postTranslate(-offsetX, -offsetY);
-//            matrix.postRotate(rotation);
-//            matrix.postTranslate(posX + offsetX, posY + offsetY);
-//            canvas.drawBitmap(bitmap, matrix, paint);
-//        }
+        private void drawRotateBitmap(Canvas canvas, Paint paint, Bitmap bitmap,
+                                      float rotation, float posX, float posY) {// 旋轉bitmap本身
+            //if(mirrorPoints){posX=config.imageWidth-posX;}
+            Matrix matrix = new Matrix();
+            int offsetX = bitmap.getWidth() / 2;
+            int offsetY = bitmap.getHeight() / 2;
+            matrix.postTranslate(-offsetX, -offsetY);
+            matrix.postRotate(rotation);
+            matrix.postTranslate(posX + offsetX, posY + offsetY);
+            canvas.drawBitmap(bitmap, matrix, paint);
+        }
+        private void drawRotateBitmapByCenter(Canvas canvas, Paint paint, Bitmap bitmap,
+                                      float rotation, float posX, float posY, float centerX, float centerY) {// 旋轉bitmap本身
+            //if(mirrorPoints){posX=config.imageWidth-posX;}
+            Matrix matrix = new Matrix();
+            matrix.postTranslate(posX, posY);
+            matrix.postRotate(rotation,centerX,centerY);
+            canvas.drawBitmap(bitmap, matrix, paint);
+        }
+
         private void drawFaceAttributes(Canvas c, Face face, boolean mirrorPoints, boolean isMultiFaceMode) {
             //Coordinates around which to draw bounding box.
             //Default to an 'inverted' box, where the absolute max and min values of the surface view are inside-out
@@ -547,10 +557,13 @@ public class DrawingView extends SurfaceView implements SurfaceHolder.Callback {
                 Log.d("Draw/x_nose",noseX+"");
                 Log.d("Draw/sin",sinAngle+"");
                 float angle = (float)Math.toDegrees(Math.asin(sinAngle)); Log.d("Draw/angle",angle+"");
-                c.rotate(angle,noseX,noseY);
-                c.drawBitmap(earBitmap2, drawEarX, drawEarY, trackingPointsPaint);// 耳朵放在額頭 並置中
-                c.drawBitmap(noseBitmap2, drawNoseX, drawNoseY, trackingPointsPaint);// 鼻子放在鼻頭 並置中
-                //drawRotateBitmap(c,trackingPointsPaint,earBitmap2,angle,drawEarX,drawEarY);
+
+
+                //c.drawBitmap(earBitmap2, drawEarX, drawEarY, trackingPointsPaint);// 耳朵放在額頭 並置中
+                //c.drawBitmap(noseBitmap2, drawNoseX, drawNoseY, trackingPointsPaint);// 鼻子放在鼻頭 並置中
+                //畫 經過旋轉的 耳朵&鼻子
+                drawRotateBitmapByCenter(c,trackingPointsPaint,earBitmap2,angle,drawEarX,drawEarY,noseX,noseY);
+                drawRotateBitmapByCenter(c,trackingPointsPaint,noseBitmap2,angle,drawNoseX,drawNoseY,noseX,noseY);
 
             }
             for (PointF point : face.getFacePoints()) {
